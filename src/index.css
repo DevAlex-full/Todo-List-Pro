@@ -2,30 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --color-primary: #3b82f6;
-  }
-
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-      monospace;
-  }
+:root {
+  --color-primary: #3b82f6;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Components usando @apply */
 @layer components {
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-card border border-gray-200 dark:border-gray-700;
@@ -52,6 +52,7 @@
   }
 }
 
+/* Utilities customizadas */
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -68,11 +69,31 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+    background-color: rgb(243, 244, 246);
+    border-radius: 9999px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
+    background-color: rgb(209, 213, 219);
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(156, 163, 175);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background-color: rgb(31, 41, 55);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgb(75, 85, 99);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background-color: rgb(107, 114, 128);
+    }
   }
 }
 
@@ -106,7 +127,27 @@
   );
 }
 
-/* Transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Classes de animação */
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
@@ -115,7 +156,8 @@
   animation: slideUp 0.3s ease-out;
 }
 
-/* Toaster customization */
+/* Customização do Toaster */
 .Toaster__toast {
-  @apply rounded-lg shadow-lg;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
