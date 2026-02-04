@@ -66,7 +66,7 @@ export default function Sidebar() {
                   />
                 </div>
                 <div>
-                  <h1 className="text-white font-bold text-lg">Todo Pro</h1>
+                  <h1 className="text-white font-bold text-lg">TaskFlow</h1>
                 </div>
               </div>
               

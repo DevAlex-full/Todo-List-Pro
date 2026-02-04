@@ -114,7 +114,7 @@ export default function LoginPage() {
               }}
             />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Todo List Pro</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">TaskFlow</h1>
           <p className="text-purple-200">Organize suas tarefas com eficiência</p>
         </div>
 
@@ -238,7 +238,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-purple-300/70">
-          © 2026 Todo List Pro. Desenvolvido por DevAlex
+          © 2026 TaskFlow. Desenvolvido por DevAlex
         </p>
       </div>
     </div>

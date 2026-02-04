@@ -330,7 +330,7 @@ export default function RegisterPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-purple-300/70">
-          © 2026 Todo List Pro • Debug Mode
+          © 2026 TaskFlow • Debug Mode
         </p>
       </div>
     </div>
