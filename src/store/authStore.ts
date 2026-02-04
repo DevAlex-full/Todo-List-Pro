@@ -19,7 +19,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, _get) => ({
       user: null,
       profile: null,
       isLoading: true,
@@ -51,6 +51,8 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session } } = await supabase.auth.getSession();
 
           if (session?.user) {
+            console.log('✅ Sessão encontrada:', session.user.email);
+            
             set({
               user: {
                 id: session.user.id,
@@ -60,16 +62,39 @@ export const useAuthStore = create<AuthState>()(
             });
 
             // Buscar perfil
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single();
 
             if (profile) {
+              console.log('✅ Perfil encontrado');
               set({ profile });
+            } else if (profileError) {
+              console.warn('⚠️ Perfil não encontrado, criando...');
+              
+              // Criar perfil se não existir
+              const { data: newProfile } = await supabase
+                .from('profiles')
+                .upsert({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  full_name: session.user.user_metadata?.full_name || null,
+                  avatar_url: session.user.user_metadata?.avatar_url || null,
+                  theme_preference: 'dark',
+                  custom_color: '#8B5CF6',
+                  notifications_enabled: true,
+                })
+                .select()
+                .single();
+
+              if (newProfile) {
+                set({ profile: newProfile });
+              }
             }
           } else {
+            console.log('❌ Nenhuma sessão encontrada');
             set({
               user: null,
               profile: null,
@@ -98,3 +123,55 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Listener para mudanças de autenticação (OAuth)
+supabase.auth.onAuthStateChange(async (event, session) => {
+  console.log('🔄 Auth state change:', event);
+  
+  if (event === 'SIGNED_IN' && session) {
+    console.log('✅ Usuário logado:', session.user.email);
+    
+    const store = useAuthStore.getState();
+    store.setUser({
+      id: session.user.id,
+      email: session.user.email || '',
+    });
+    
+    // Buscar/criar perfil
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile) {
+      store.setProfile(profile);
+    } else {
+      // Criar perfil para usuário OAuth
+      const { data: newProfile } = await supabase
+        .from('profiles')
+        .upsert({
+          id: session.user.id,
+          email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name || null,
+          avatar_url: session.user.user_metadata?.avatar_url || null,
+          theme_preference: 'dark',
+          custom_color: '#8B5CF6',
+          notifications_enabled: true,
+        })
+        .select()
+        .single();
+
+      if (newProfile) {
+        store.setProfile(newProfile);
+      }
+    }
+  }
+  
+  if (event === 'SIGNED_OUT') {
+    console.log('👋 Usuário deslogado');
+    const store = useAuthStore.getState();
+    store.setUser(null);
+    store.setProfile(null);
+  }
+});

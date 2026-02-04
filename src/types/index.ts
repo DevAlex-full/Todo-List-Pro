@@ -1,5 +1,5 @@
 // ========================================
-// TYPES - Espelho dos tipos do backend
+// TYPES - Definições TypeScript
 // ========================================
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
@@ -8,13 +8,17 @@ export type RecurrencePattern = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ThemePreference = 'light' | 'dark' | 'auto';
 
 // ========================================
-// DATABASE MODELS
+// AUTH TYPES (FALTAVA!)
 // ========================================
 
 export interface User {
   id: string;
   email: string;
 }
+
+// ========================================
+// DATABASE MODELS
+// ========================================
 
 export interface Profile {
   id: string;
@@ -42,7 +46,6 @@ export interface Task {
   id: string;
   user_id: string;
   category_id: string | null;
-  category?: Category;
   title: string;
   description: string | null;
   priority: Priority;
@@ -58,7 +61,6 @@ export interface Task {
   actual_time: number | null;
   tags: string[];
   attachments: Attachment[];
-  subtasks?: Subtask[];
   created_at: string;
   updated_at: string;
 }
@@ -77,7 +79,6 @@ export interface PomodoroSession {
   id: string;
   user_id: string;
   task_id: string | null;
-  task?: { title: string };
   duration: number;
   completed: boolean;
   started_at: string;
@@ -88,7 +89,6 @@ export interface ActivityLog {
   id: string;
   user_id: string;
   task_id: string | null;
-  task?: { title: string };
   action: string;
   details: Record<string, any>;
   created_at: string;
@@ -102,27 +102,14 @@ export interface Attachment {
 }
 
 // ========================================
-// FORM DATA TYPES
+// REQUEST/RESPONSE TYPES
 // ========================================
 
-export interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-export interface RegisterFormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  full_name?: string;
-}
-
-export interface TaskFormData {
+export interface CreateTaskDTO {
   title: string;
   description?: string;
   category_id?: string;
   priority?: Priority;
-  status?: TaskStatus;
   due_date?: string;
   reminder_date?: string;
   is_recurring?: boolean;
@@ -133,33 +120,58 @@ export interface TaskFormData {
   attachments?: Attachment[];
 }
 
-export interface CategoryFormData {
+export interface UpdateTaskDTO {
+  title?: string;
+  description?: string;
+  category_id?: string;
+  priority?: Priority;
+  status?: TaskStatus;
+  due_date?: string;
+  reminder_date?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: RecurrencePattern;
+  recurrence_interval?: number;
+  estimated_time?: number;
+  actual_time?: number;
+  tags?: string[];
+  attachments?: Attachment[];
+  position?: number;
+}
+
+export interface CreateCategoryDTO {
   name: string;
   color?: string;
   icon?: string;
 }
 
-export interface SubtaskFormData {
-  title: string;
+export interface UpdateCategoryDTO {
+  name?: string;
+  color?: string;
+  icon?: string;
 }
 
-export interface ProfileFormData {
+export interface CreateSubtaskDTO {
+  title: string;
+  position?: number;
+}
+
+export interface UpdateSubtaskDTO {
+  title?: string;
+  completed?: boolean;
+  position?: number;
+}
+
+export interface CreatePomodoroDTO {
+  task_id?: string;
+  duration: number;
+}
+
+export interface UpdateProfileDTO {
   full_name?: string;
   avatar_url?: string;
   theme_preference?: ThemePreference;
   custom_color?: string;
   notifications_enabled?: boolean;
-}
-
-// ========================================
-// API RESPONSE TYPES
-// ========================================
-
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
 }
 
 export interface TaskStatistics {
@@ -173,31 +185,6 @@ export interface TaskStatistics {
   average_completion_time: number;
 }
 
-export interface ProductivityData {
-  date: string;
-  tasks_completed: number;
-  time_spent: number;
-}
-
-export interface CategoryDistribution {
-  id: string;
-  name: string;
-  color: string;
-  count: number;
-}
-
-export interface PriorityDistribution {
-  priority: string;
-  total: number;
-  completed: number;
-  pending: number;
-  completion_rate: number;
-}
-
-// ========================================
-// FILTER TYPES
-// ========================================
-
 export interface TaskFilters {
   status?: TaskStatus;
   priority?: Priority;
@@ -208,30 +195,24 @@ export interface TaskFilters {
   due_date_to?: string;
 }
 
-export interface SortOption {
-  field: 'due_date' | 'priority' | 'created_at' | 'title';
-  direction: 'asc' | 'desc';
-}
-
 // ========================================
-// UI STATE TYPES
+// API RESPONSE TYPES
 // ========================================
 
-export interface ModalState {
-  isOpen: boolean;
-  mode: 'create' | 'edit';
-  task?: Task;
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }
 
-export interface DrawerState {
-  isOpen: boolean;
-  taskId?: string;
-}
-
-export interface PomodoroState {
-  isRunning: boolean;
-  isPaused: boolean;
-  timeLeft: number;
-  duration: number;
-  taskId?: string;
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
