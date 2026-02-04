@@ -19,7 +19,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, _get) => ({
+    (set) => ({
       user: null,
       profile: null,
       isLoading: true,
@@ -35,12 +35,42 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading }),
 
       signOut: async () => {
-        await supabase.auth.signOut();
-        set({ 
-          user: null, 
-          profile: null, 
-          isAuthenticated: false 
-        });
+        console.log('🚪 Iniciando logout...');
+        
+        try {
+          // 1. Fazer logout no Supabase
+          const { error } = await supabase.auth.signOut();
+          
+          if (error) {
+            console.error('Erro ao fazer logout no Supabase:', error);
+          }
+          
+          // 2. Limpar estado SEMPRE (mesmo se der erro)
+          set({ 
+            user: null, 
+            profile: null, 
+            isAuthenticated: false 
+          });
+          
+          // 3. Limpar localStorage manualmente (garantia)
+          localStorage.removeItem('auth-storage');
+          
+          // 4. Recarregar página para limpar tudo
+          console.log('✅ Logout completo, recarregando...');
+          window.location.href = '/login';
+          
+        } catch (error) {
+          console.error('Erro fatal no logout:', error);
+          
+          // Mesmo com erro, limpa tudo e redireciona
+          set({ 
+            user: null, 
+            profile: null, 
+            isAuthenticated: false 
+          });
+          localStorage.removeItem('auth-storage');
+          window.location.href = '/login';
+        }
       },
 
       initialize: async () => {
