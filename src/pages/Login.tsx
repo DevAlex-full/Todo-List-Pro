@@ -123,8 +123,24 @@ export default function LoginPage() {
     '/fundo3.jpeg',
   ];
 
-  const randomBackground =
-    backgrounds[Math.floor(Math.random() * backgrounds.length)];
+  const [background, setBackground] = useState<string>(backgrounds[0]);
+
+
+  useEffect(() => {
+    const lastIndex = Number(localStorage.getItem('loginBgIndex')) || 0;
+    const nextIndex = (lastIndex + 1) % backgrounds.length;
+
+    localStorage.setItem('loginBgIndex', String(nextIndex));
+    setBackground(backgrounds[nextIndex]);
+
+    // Preload silencioso
+    backgrounds.forEach((bg) => {
+      const img = new Image();
+      img.src = bg;
+    });
+  }, []);
+
+
 
 
   return (
@@ -132,15 +148,19 @@ export default function LoginPage() {
 
       {/* Background animado */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-slow-zoom"
-        style={{ backgroundImage: `url(${randomBackground})` }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-slow-zoom bg-fade"
+        style={{ backgroundImage: `url(${background})` }}
       ></div>
+
+
 
       {/* Aura roxa sutil */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-indigo-600/20"></div>
 
       {/* Blur + escurecimento */}
       <div className="absolute inset-0 backdrop-blur-sm bg-black/50"></div>
+
+      <div className="noise-overlay"></div>
 
       {/* Conteúdo */}
       <div className="w-full max-w-md relative z-10">
