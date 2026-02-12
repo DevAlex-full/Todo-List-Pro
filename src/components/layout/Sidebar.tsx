@@ -20,10 +20,10 @@ export default function Sidebar() {
   const handleLogout = async () => {
     if (confirm('Tem certeza que deseja sair?')) {
       console.log('🚪 Logout iniciado pelo usuário');
-      
+
       // Limpar cache do token
       clearTokenCache();
-      
+
       // Fazer logout
       await signOut();
     }
@@ -72,9 +72,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-800 border-r border-slate-700 flex flex-col transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 border-r border-slate-700 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-slate-700">
@@ -106,11 +105,10 @@ export default function Sidebar() {
                     toggleSidebar();
                   }
                 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                     ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
                     : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon className="h-5 w-5" />
                 <span className="font-medium">{item.label}</span>
