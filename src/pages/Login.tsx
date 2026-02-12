@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -7,12 +7,19 @@ import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setUser, setProfile } = useAuthStore();
+  const { setUser, setProfile, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Se já está autenticado, redireciona
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,6 +32,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log('🔐 Tentando login com:', email);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -33,27 +42,36 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.user) {
+        console.log('✅ Login bem-sucedido:', data.user.email);
+
         setUser({
           id: data.user.id,
           email: data.user.email || '',
         });
 
-        // Buscar perfil
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
+        // Buscar perfil - USANDO maybeSingle() para não dar erro
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
 
-        if (profile) {
-          setProfile(profile);
+          if (profile && !profileError) {
+            console.log('✅ Perfil encontrado');
+            setProfile(profile);
+          } else {
+            console.warn('⚠️ Perfil não encontrado, será criado automaticamente');
+          }
+        } catch (profileErr) {
+          console.warn('Erro ao buscar perfil (ignorado):', profileErr);
         }
 
         toast.success('Login realizado com sucesso!');
         navigate('/dashboard');
       }
     } catch (error: any) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
@@ -75,14 +93,19 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
       if (error) throw error;
+      
     } catch (error: any) {
       console.error('Erro no login Google:', error);
+      setGoogleLoading(false);
       
-      // Se o Google OAuth não estiver configurado
       if (error.message.includes('provider') || error.message.includes('not enabled')) {
         toast.error('Login com Google não está disponível no momento. Use email e senha.', {
           duration: 4000,
@@ -90,8 +113,6 @@ export default function LoginPage() {
       } else {
         toast.error('Erro ao fazer login com Google');
       }
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -110,7 +131,7 @@ export default function LoginPage() {
               className="w-16 h-16"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 flex items-center justify-center text-white text-3xl font-bold">A</div>';
+                e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 flex items-center justify-center text-white text-3xl font-bold">T</div>';
               }}
             />
           </div>
@@ -238,7 +259,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-purple-300/70">
-          © 2026 TaskFlow. Desenvolvido por DevAlex
+          © 2026 TaskFlow • Desenvolvido por DevAlex
         </p>
       </div>
     </div>

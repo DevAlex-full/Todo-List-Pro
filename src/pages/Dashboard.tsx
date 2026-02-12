@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/utils';
 
 export default function DashboardPage() {
-  // Buscar estatísticas com retry e error handling
+  // Buscar estatísticas
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['statistics'],
     queryFn: async () => {
@@ -26,8 +26,9 @@ export default function DashboardPage() {
         return null;
       }
     },
-    retry: 1,
+    retry: false, // Não tentar novamente se falhar
     refetchOnWindowFocus: false,
+    staleTime: 30000, // Cache por 30 segundos
   });
 
   // Buscar tarefas de hoje
@@ -42,8 +43,9 @@ export default function DashboardPage() {
         return [];
       }
     },
-    retry: 1,
+    retry: false,
     refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   // Buscar tarefas atrasadas
@@ -58,8 +60,9 @@ export default function DashboardPage() {
         return [];
       }
     },
-    retry: 1,
+    retry: false,
     refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   const isLoading = statsLoading || todayLoading || overdueLoading;
@@ -69,7 +72,7 @@ export default function DashboardPage() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-4 lg:p-8">
+      <main className="lg:ml-64 p-4 lg:p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>

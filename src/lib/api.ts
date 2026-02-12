@@ -9,17 +9,51 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
-// Interceptor para adicionar token automaticamente
+// Cache do token
+let cachedToken: string | null = null;
+let tokenExpiry: number = 0;
+
+// Função para obter token
+async function getAuthToken(): Promise<string | null> {
+  const now = Date.now();
+  
+  // Se tem token em cache e não expirou, usar ele
+  if (cachedToken && now < tokenExpiry) {
+    return cachedToken;
+  }
+
+  try {
+    const { data } = await supabase.auth.getSession();
+
+    if (data?.session?.access_token) {
+      cachedToken = data.session.access_token;
+      // Cache por 50 minutos
+      tokenExpiry = now + 50 * 60 * 1000;
+      return cachedToken;
+    }
+  } catch (error) {
+    console.warn('Erro ao buscar token (ignorado):', error);
+  }
+
+  return null;
+}
+
+// Limpar cache do token (útil no logout)
+export function clearTokenCache() {
+  cachedToken = null;
+  tokenExpiry = 0;
+}
+
+// Interceptor para adicionar token
 api.interceptors.request.use(
   async (config) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+    const token = await getAuthToken();
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -33,10 +67,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Se o token expirou, fazer logout
     if (error.response?.status === 401) {
-      await supabase.auth.signOut();
-      window.location.href = '/login';
+      clearTokenCache();
+      
+      // Só fazer logout se não estiver já na página de login
+      if (!window.location.pathname.includes('/login')) {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn('Erro ao fazer logout:', e);
+        }
+        window.location.href = '/login';
+      }
     }
 
     return Promise.reject(error);

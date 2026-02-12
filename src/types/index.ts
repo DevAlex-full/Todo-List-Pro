@@ -46,6 +46,7 @@ export interface Task {
   id: string;
   user_id: string;
   category_id: string | null;
+  category?: Category;
   title: string;
   description: string | null;
   priority: Priority;
@@ -119,6 +120,9 @@ export interface CreateTaskDTO {
   tags?: string[];
   attachments?: Attachment[];
 }
+
+// TaskFormData é um alias para CreateTaskDTO (usado no frontend)
+export type TaskFormData = CreateTaskDTO;
 
 export interface UpdateTaskDTO {
   title?: string;
