@@ -116,25 +116,42 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM4QjVDRjYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAgMi4yMS0xLjc5IDQtNCA0cy00LTEuNzktNC00IDEuNzktNCA0LTQgNCAxLjc5IDQgNHptLTggMTZjMCAyLjIxLTEuNzkgNC00IDRzLTQtMS43OS00LTQgMS43OS00IDQtNCA0IDEuNzkgNCA0em0wIDhjMCAyLjIxLTEuNzkgNC00IDRzLTQtMS43OS00LTQgMS43OS00IDQtNCA0IDEuNzkgNCA0em04IDhjMCAyLjIxLTEuNzkgNC00IDRzLTQtMS43OS00LTQgMS43OS00IDQtNCA0IDEuNzkgNCA0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-20"></div>
+  const backgrounds = [
+    '/fundo.jpeg',
+    '/fundo1.jpeg',
+    '/fundo2.jpeg',
+    '/fundo3.jpeg',
+  ];
 
-      <div className="w-full max-w-md relative">
+  const randomBackground =
+    backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+
+      {/* Background animado */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-slow-zoom"
+        style={{ backgroundImage: `url(${randomBackground})` }}
+      ></div>
+
+      {/* Aura roxa sutil */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-indigo-600/20"></div>
+
+      {/* Blur + escurecimento */}
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/50"></div>
+
+      {/* Conteúdo */}
+      <div className="w-full max-w-md relative z-10">
+
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-violet-600 rounded-3xl shadow-xl shadow-purple-500/40">
+          <div className="inline-flex items-center justify-center">
             <img
-              src="/logo.png"
-              alt="TaskFlow Logo"
-              className="w-24 h-24 object-contain"
-              draggable={false}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML =
-                  '<div class="w-24 h-24 flex items-center justify-center text-white text-4xl font-bold">T</div>';
-              }}
+              src="/Logo.png"
+              alt="Logo"
+              className="w-24 h-24 object-contain drop-shadow-[0_0_35px_rgba(139,92,246,0.9)]"
             />
           </div>
 
@@ -147,7 +164,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card de Login */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
+        <div className="bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl p-8 border border-white/20">
           <h2 className="text-2xl font-bold text-white mb-6">Entrar</h2>
 
           <form onSubmit={handleLogin} className="space-y-5">

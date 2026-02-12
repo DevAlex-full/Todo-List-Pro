@@ -78,9 +78,11 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <CheckSquare className="h-6 w-6 text-white" />
-            </div>
+            <img
+              src="/Logo.png"
+              alt="TaskFlow Logo"
+              className="w-9 h-9 object-contain"
+            />
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
                 TaskFlow
@@ -106,8 +108,8 @@ export default function Sidebar() {
                   }
                 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
-                    : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                   }`}
               >
                 <Icon className="h-5 w-5" />
