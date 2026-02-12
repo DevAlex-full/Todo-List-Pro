@@ -231,7 +231,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
             <img
-              src="/Logo.png"
+              src="/logo.png"
               alt="Logo"
               className="w-24 h-24 object-contain drop-shadow-[0_0_35px_rgba(139,92,246,0.9)]"
             />

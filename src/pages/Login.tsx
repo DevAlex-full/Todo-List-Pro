@@ -149,7 +149,7 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center">
             <img
-              src="/Logo.png"
+              src="/logo.png"
               alt="Logo"
               className="w-24 h-24 object-contain drop-shadow-[0_0_35px_rgba(139,92,246,0.9)]"
             />
