@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { clearTokenCache } from '@/lib/api';
 
 export default function Sidebar() {
   const location = useLocation();
@@ -21,10 +20,7 @@ export default function Sidebar() {
     if (confirm('Tem certeza que deseja sair?')) {
       console.log('🚪 Logout iniciado pelo usuário');
 
-      // Limpar cache do token
-      clearTokenCache();
-
-      // Fazer logout
+      // Fazer logout (o authStore já cuida de limpar tudo)
       await signOut();
     }
   };
