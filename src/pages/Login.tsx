@@ -123,25 +123,25 @@ export default function LoginPage() {
     '/fundo3.jpeg',
   ];
 
-  const [background, setBackground] = useState<string>(backgrounds[0]);
+  const getNextBackground = () => {
+  let lastIndex = parseInt(localStorage.getItem('loginBgIndex') || '-1', 10);
 
+  if (isNaN(lastIndex)) lastIndex = -1;
 
-  useEffect(() => {
-    const lastIndex = Number(localStorage.getItem('loginBgIndex')) || 0;
-    const nextIndex = (lastIndex + 1) % backgrounds.length;
+  const nextIndex = (lastIndex + 1) % backgrounds.length;
 
-    localStorage.setItem('loginBgIndex', String(nextIndex));
-    setBackground(backgrounds[nextIndex]);
+  localStorage.setItem('loginBgIndex', String(nextIndex));
 
-    // Preload silencioso
-    backgrounds.forEach((bg) => {
-      const img = new Image();
-      img.src = bg;
-    });
-  }, []);
+  return backgrounds[nextIndex];
+};
 
-
-
+  const [background] = useState<string>(() => {
+    try {
+      return getNextBackground();
+    } catch {
+      return backgrounds[0];
+    }
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">

@@ -79,7 +79,7 @@ export default function Sidebar() {
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
             <img
-              src="/Logo.png"
+              src="/logo.png"
               alt="TaskFlow Logo"
               className="w-9 h-9 object-contain"
             />

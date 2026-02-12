@@ -26,9 +26,9 @@ export default function DashboardPage() {
         return null;
       }
     },
-    retry: false, // Não tentar novamente se falhar
+    retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 30000, // Cache por 30 segundos
+    staleTime: 30000,
   });
 
   // Buscar tarefas de hoje
@@ -72,9 +72,9 @@ export default function DashboardPage() {
       <Sidebar />
 
       <main className="lg:ml-64 p-6 lg:p-10">
-        <div className="max-w-7xl mx-auto"></div>
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 pt-20 lg:pt-0">
             <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
             <p className="text-purple-200">Bem-vindo de volta! Aqui está um resumo das suas tarefas.</p>
           </div>
@@ -345,6 +345,7 @@ export default function DashboardPage() {
               </div>
             </>
           )}
+        </div>
       </main>
     </div>
   );
