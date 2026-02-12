@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { supabase } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error('VITE_API_URL não definida nas variáveis de ambiente.');
+}
 
 // Criar instância do axios
 export const api = axios.create({
@@ -9,18 +13,21 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  withCredentials: true,
 });
 
-// Cache do token
+// ========================================
+// TOKEN CACHE
+// ========================================
+
 let cachedToken: string | null = null;
 let tokenExpiry: number = 0;
 
 // Função para obter token
 async function getAuthToken(): Promise<string | null> {
   const now = Date.now();
-  
-  // Se tem token em cache e não expirou, usar ele
+
+  // Se token válido em cache
   if (cachedToken && now < tokenExpiry) {
     return cachedToken;
   }
@@ -28,55 +35,64 @@ async function getAuthToken(): Promise<string | null> {
   try {
     const { data } = await supabase.auth.getSession();
 
-    if (data?.session?.access_token) {
-      cachedToken = data.session.access_token;
-      // Cache por 50 minutos
+    const token = data?.session?.access_token;
+
+    if (token) {
+      cachedToken = token;
+
+      // Expira em 50 minutos
       tokenExpiry = now + 50 * 60 * 1000;
-      return cachedToken;
+
+      return token;
     }
   } catch (error) {
-    console.warn('Erro ao buscar token (ignorado):', error);
+    console.warn('Erro ao buscar token:', error);
   }
 
   return null;
 }
 
-// Limpar cache do token (útil no logout)
+// Limpar cache (usar no logout)
 export function clearTokenCache() {
   cachedToken = null;
   tokenExpiry = 0;
 }
 
-// Interceptor para adicionar token
+// ========================================
+// REQUEST INTERCEPTOR
+// ========================================
+
 api.interceptors.request.use(
   async (config) => {
     const token = await getAuthToken();
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Interceptor para tratar erros
+// ========================================
+// RESPONSE INTERCEPTOR
+// ========================================
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       clearTokenCache();
-      
-      // Só fazer logout se não estiver já na página de login
+
+      // Evitar loop de logout
       if (!window.location.pathname.includes('/login')) {
         try {
           await supabase.auth.signOut();
-        } catch (e) {
-          console.warn('Erro ao fazer logout:', e);
+        } catch (err) {
+          console.warn('Erro ao deslogar:', err);
         }
+
         window.location.href = '/login';
       }
     }
