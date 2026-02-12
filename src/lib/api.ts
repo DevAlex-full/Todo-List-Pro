@@ -1,104 +1,23 @@
-import axios from 'axios';
-import { supabase } from './supabase';
+import axios from "axios";
+import { supabase } from "./supabase";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-if (!API_URL) {
-  throw new Error('VITE_API_URL não definida nas variáveis de ambiente.');
-}
-
-// Criar instância do axios
+// ✅ CORRIGIDO: Agora api é uma NAMED EXPORT
 export const api = axios.create({
-  baseURL: `${API_URL}/api`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
-// ========================================
-// TOKEN CACHE
-// ========================================
+// 🔥 INTERCEPTOR PARA ENVIAR TOKEN JWT
+api.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
 
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
-
-// Função para obter token
-async function getAuthToken(): Promise<string | null> {
-  const now = Date.now();
-
-  // Se token válido em cache
-  if (cachedToken && now < tokenExpiry) {
-    return cachedToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
-  try {
-    const { data } = await supabase.auth.getSession();
+  return config;
+});
 
-    const token = data?.session?.access_token;
-
-    if (token) {
-      cachedToken = token;
-
-      // Expira em 50 minutos
-      tokenExpiry = now + 50 * 60 * 1000;
-
-      return token;
-    }
-  } catch (error) {
-    console.warn('Erro ao buscar token:', error);
-  }
-
-  return null;
-}
-
-// Limpar cache (usar no logout)
-export function clearTokenCache() {
-  cachedToken = null;
-  tokenExpiry = 0;
-}
-
-// ========================================
-// REQUEST INTERCEPTOR
-// ========================================
-
-api.interceptors.request.use(
-  async (config) => {
-    const token = await getAuthToken();
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// ========================================
-// RESPONSE INTERCEPTOR
-// ========================================
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      clearTokenCache();
-
-      // Evitar loop de logout
-      if (!window.location.pathname.includes('/login')) {
-        try {
-          await supabase.auth.signOut();
-        } catch (err) {
-          console.warn('Erro ao deslogar:', err);
-        }
-
-        window.location.href = '/login';
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
+// ✅ Também exportar como default para compatibilidade
 export default api;
