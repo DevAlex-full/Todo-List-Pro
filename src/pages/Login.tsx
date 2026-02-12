@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error('Preencha todos os campos');
       return;
@@ -72,7 +72,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('❌ Erro no login:', error);
-      
+
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
       } else if (error.message.includes('Email not confirmed')) {
@@ -87,7 +87,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -101,11 +101,11 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
-      
+
     } catch (error: any) {
       console.error('Erro no login Google:', error);
       setGoogleLoading(false);
-      
+
       if (error.message.includes('provider') || error.message.includes('not enabled')) {
         toast.error('Login com Google não está disponível no momento. Use email e senha.', {
           duration: 4000,
@@ -123,20 +123,27 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl mb-4 shadow-lg shadow-purple-500/50">
-            <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="w-16 h-16"
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-violet-600 rounded-3xl shadow-xl shadow-purple-500/40">
+            <img
+              src="/logo.png"
+              alt="TaskFlow Logo"
+              className="w-24 h-24 object-contain"
+              draggable={false}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 flex items-center justify-center text-white text-3xl font-bold">T</div>';
+                e.currentTarget.parentElement!.innerHTML =
+                  '<div class="w-24 h-24 flex items-center justify-center text-white text-4xl font-bold">T</div>';
               }}
             />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">TaskFlow</h1>
-          <p className="text-purple-200">Organize suas tarefas com eficiência</p>
+
+          <h1 className="mt-6 text-4xl font-bold text-white tracking-tight">
+            TaskFlow
+          </h1>
+          <p className="mt-2 text-purple-200 text-base">
+            Organize suas tarefas com eficiência
+          </p>
         </div>
 
         {/* Card de Login */}
