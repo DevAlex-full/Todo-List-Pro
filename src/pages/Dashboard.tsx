@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import {
   CheckCircle2,
@@ -12,66 +13,74 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 export default function DashboardPage() {
-  // Buscar estatísticas COM PROTEÇÃO CONTRA LOOP
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const [canFetchData, setCanFetchData] = useState(false);
+
+  // ========================================
+  // ESPERA AUTH ESTAR PRONTO
+  // ========================================
+  useEffect(() => {
+    // Aguarda auth completar E ter usuário
+    if (!authLoading && isAuthenticated && user) {
+      // Delay de 300ms para garantir token disponível
+      const timer = setTimeout(() => {
+        setCanFetchData(true);
+        console.log('✅ [Dashboard] Pronto para buscar dados');
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setCanFetchData(false);
+    }
+  }, [authLoading, isAuthenticated, user]);
+
+  // ========================================
+  // QUERIES - SÓ EXECUTAM QUANDO LIBERADAS
+  // ========================================
+  
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['statistics'],
     queryFn: async () => {
-      try {
-        const { data } = await api.get('/analytics/statistics?period=week');
-        return data.data;
-      } catch (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-        return null;
-      }
+      console.log('📊 [Dashboard] Buscando estatísticas...');
+      const { data } = await api.get('/analytics/statistics?period=week');
+      console.log('✅ [Dashboard] Estatísticas recebidas');
+      return data.data;
     },
-    retry: 1, // Tenta apenas 1 vez
-    retryDelay: 1000, // Aguarda 1s antes de tentar novamente
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // ✅ NÃO recarrega ao montar
-    staleTime: 60000, // Dados válidos por 1 minuto
+    enabled: canFetchData, // ✅ SÓ executa quando liberado
+    retry: 1,
+    retryDelay: 1000,
   });
 
-  // Buscar tarefas de hoje COM PROTEÇÃO CONTRA LOOP
   const { data: todayTasks, isLoading: todayLoading } = useQuery({
     queryKey: ['tasks', 'today'],
     queryFn: async () => {
-      try {
-        const { data } = await api.get('/tasks/today');
-        return data.data || [];
-      } catch (error) {
-        console.error('Erro ao buscar tarefas de hoje:', error);
-        return [];
-      }
+      console.log('📅 [Dashboard] Buscando tarefas de hoje...');
+      const { data } = await api.get('/tasks/today');
+      console.log('✅ [Dashboard] Tarefas de hoje recebidas');
+      return data.data || [];
     },
+    enabled: canFetchData,
     retry: 1,
     retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 60000,
   });
 
-  // Buscar tarefas atrasadas COM PROTEÇÃO CONTRA LOOP
   const { data: overdueTasks, isLoading: overdueLoading } = useQuery({
     queryKey: ['tasks', 'overdue'],
     queryFn: async () => {
-      try {
-        const { data } = await api.get('/tasks/overdue');
-        return data.data || [];
-      } catch (error) {
-        console.error('Erro ao buscar tarefas atrasadas:', error);
-        return [];
-      }
+      console.log('⏰ [Dashboard] Buscando tarefas atrasadas...');
+      const { data } = await api.get('/tasks/overdue');
+      console.log('✅ [Dashboard] Tarefas atrasadas recebidas');
+      return data.data || [];
     },
+    enabled: canFetchData,
     retry: 1,
     retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 60000,
   });
 
-  const isLoading = statsLoading || todayLoading || overdueLoading;
+  const isLoading = authLoading || !canFetchData || statsLoading || todayLoading || overdueLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -94,7 +103,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Error State - Mostrar se houver erro */}
+        {/* Error State */}
         {!isLoading && statsError && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
             <div className="flex items-center gap-3">

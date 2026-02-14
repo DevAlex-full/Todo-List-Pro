@@ -7,22 +7,22 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
 
-// ✅ CONFIGURAÇÃO OTIMIZADA DO REACT QUERY - PROTEÇÃO GLOBAL CONTRA LOOPS
+// Configurar React Query - OTIMIZADO
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Configurações de retry
-      retry: 1, // Tenta apenas 1 vez
-      retryDelay: 1000, // Aguarda 1s entre tentativas
+      // Retry
+      retry: 1,
+      retryDelay: 1000,
       
-      // Configurações de refetch
-      refetchOnWindowFocus: false, // NÃO recarrega ao focar na janela
-      refetchOnMount: false, // ✅ NÃO recarrega ao montar o componente
-      refetchOnReconnect: false, // NÃO recarrega ao reconectar
+      // Refetch - Configuração balanceada
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,        // ✅ ADICIONADO - Permite F5 funcionar
+      refetchOnReconnect: false,   // ✅ ADICIONADO
       
-      // Cache
-      staleTime: 5 * 60 * 1000, // Dados válidos por 5 minutos
-      gcTime: 10 * 60 * 1000, // Mantém no cache por 10 minutos
+      // Cache - Reduzido para 30s (era 5min)
+      staleTime: 30 * 1000,        // ✅ MODIFICADO - 30 segundos
+      gcTime: 5 * 60 * 1000,       // ✅ ADICIONADO - 5 minutos no cache
     },
     mutations: {
       retry: 1,
