@@ -13,13 +13,12 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
-  initialize: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, _get) => ({
+    (set) => ({
       user: null,
       profile: null,
       isLoading: true,
@@ -34,59 +33,6 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading) =>
         set({ isLoading }),
 
-      // ✅ MÉTODO DE INICIALIZAÇÃO
-      initialize: async () => {
-        console.log('🚀 [AuthStore] Inicializando...');
-        
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('❌ [AuthStore] Erro ao buscar sessão:', error);
-            set({ isLoading: false, user: null, profile: null, isAuthenticated: false });
-            return;
-          }
-          
-          if (session?.user) {
-            console.log('✅ [AuthStore] Sessão encontrada');
-            
-            set({
-              user: {
-                id: session.user.id,
-                email: session.user.email || '',
-              },
-              isAuthenticated: true,
-            });
-            
-            // Buscar perfil
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-              
-              if (profile) {
-                console.log('✅ [AuthStore] Perfil carregado');
-                set({ profile });
-              }
-            } catch (err) {
-              console.warn('⚠️ [AuthStore] Erro ao carregar perfil:', err);
-            }
-          } else {
-            console.log('ℹ️ [AuthStore] Nenhuma sessão ativa');
-            set({ user: null, profile: null, isAuthenticated: false });
-          }
-          
-          set({ isLoading: false });
-          console.log('✅ [AuthStore] Inicialização completa');
-          
-        } catch (error) {
-          console.error('❌ [AuthStore] Erro crítico:', error);
-          set({ isLoading: false, user: null, profile: null, isAuthenticated: false });
-        }
-      },
-
       signOut: async () => {
         console.log('🚪 Iniciando logout...');
 
@@ -99,7 +45,6 @@ export const useAuthStore = create<AuthState>()(
           });
 
           localStorage.removeItem('auth-storage');
-
           await supabase.auth.signOut();
 
           console.log('✅ Logout completo');
@@ -131,17 +76,71 @@ export const useAuthStore = create<AuthState>()(
 );
 
 // ========================================
-// INICIALIZAÇÃO IMEDIATA
-// ========================================
-useAuthStore.getState().initialize();
-
-// ========================================
-// LISTENER DE EVENTOS
+// LISTENER ÚNICO - PADRÃO OFICIAL SUPABASE
 // ========================================
 supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();
 
-  console.log('🔔 Auth event:', event);
+  console.log('🔔 Auth event:', event, session ? '(com sessão)' : '(sem sessão)');
+
+  // INITIAL_SESSION é SEMPRE o primeiro evento ao carregar
+  if (event === 'INITIAL_SESSION') {
+    if (session?.user) {
+      console.log('✅ INITIAL_SESSION: Sessão ativa');
+      
+      store.setUser({
+        id: session.user.id,
+        email: session.user.email || '',
+      });
+
+      // ✅ Buscar perfil com TIMEOUT
+      console.log('🔍 Buscando perfil...');
+      
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile timeout')), 5000)
+      );
+      
+      try {
+        const { data: profile } = await Promise.race([
+          profilePromise,
+          timeoutPromise
+        ]) as any;
+        
+        if (profile) {
+          console.log('✅ Perfil carregado');
+          store.setProfile(profile);
+        } else {
+          console.log('ℹ️ Perfil não encontrado');
+        }
+      } catch (profileError: any) {
+        console.error('❌ Erro/timeout ao buscar perfil:', profileError.message);
+        // Continua sem perfil
+      }
+    } else {
+      console.log('ℹ️ INITIAL_SESSION: Sem sessão');
+      
+      // ✅ LIMPAR dados antigos do localStorage
+      const storedData = localStorage.getItem('auth-storage');
+      if (storedData) {
+        console.log('🧹 Limpando dados antigos do localStorage');
+        localStorage.removeItem('auth-storage');
+      }
+      
+      store.setUser(null);
+      store.setProfile(null);
+    }
+    
+    // SEMPRE libera o loading no INITIAL_SESSION
+    store.setLoading(false);
+    console.log('✅ AuthStore pronto');
+    return;
+  }
 
   if (event === 'SIGNED_IN' && session) {
     console.log('✅ SIGNED_IN: Usuário fez login');
@@ -152,20 +151,42 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         email: session.user.email || '',
       });
 
-      const { data: profile } = await supabase
+      // ✅ Buscar perfil com TIMEOUT
+      console.log('🔍 Buscando perfil...');
+      
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
-
-      if (profile) {
-        console.log('✅ Perfil carregado');
-        store.setProfile(profile);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile timeout')), 5000)
+      );
+      
+      try {
+        const { data: profile } = await Promise.race([
+          profilePromise,
+          timeoutPromise
+        ]) as any;
+        
+        if (profile) {
+          console.log('✅ Perfil carregado');
+          store.setProfile(profile);
+        } else {
+          console.log('ℹ️ Perfil não encontrado');
+        }
+      } catch (profileError: any) {
+        console.error('❌ Erro/timeout ao buscar perfil:', profileError.message);
+        // Continua sem perfil
       }
+      
     } catch (err) {
-      console.error('❌ Erro ao buscar perfil:', err);
+      console.error('❌ Erro ao processar SIGNED_IN:', err);
     } finally {
+      // ✅ SEMPRE libera loading
       store.setLoading(false);
+      console.log('✅ AuthStore pronto (via SIGNED_IN)');
     }
   }
 

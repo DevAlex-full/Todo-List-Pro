@@ -25,11 +25,11 @@ export default function DashboardPage() {
   useEffect(() => {
     // Aguarda auth completar E ter usuário
     if (!authLoading && isAuthenticated && user) {
-      // Delay de 300ms para garantir token disponível
+      // Delay mínimo - interceptor tem timeout próprio
       const timer = setTimeout(() => {
         setCanFetchData(true);
         console.log('✅ [Dashboard] Pronto para buscar dados');
-      }, 300);
+      }, 100);
       
       return () => clearTimeout(timer);
     } else {

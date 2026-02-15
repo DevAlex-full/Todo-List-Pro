@@ -11,34 +11,45 @@ export const api = axios.create({
 });
 
 // ========================================
-// INTERCEPTOR DE REQUEST
-// Adiciona token JWT em todas as requisições
+// INTERCEPTOR COM TIMEOUT
 // ========================================
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Busca sessão atual do Supabase
-      const { data, error } = await supabase.auth.getSession();
+      console.log('🔑 [API] Buscando token...');
+      
+      // ✅ TIMEOUT DE 3 SEGUNDOS
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
+      
+      const { data, error } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
       
       if (error) {
         console.warn('⚠️ [API] Erro ao buscar sessão:', error.message);
-        return config; // Continua sem token
+        return config; // Continua SEM token
       }
       
-      const token = data.session?.access_token;
+      const token = data?.session?.access_token;
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('🔑 [API] Token adicionado ao request');
+        console.log('✅ [API] Token adicionado');
       } else {
-        console.warn('⚠️ [API] Nenhum token disponível');
+        console.warn('⚠️ [API] Sem token disponível');
       }
       
       return config;
       
-    } catch (error) {
-      console.error('❌ [API] Erro no interceptor:', error);
-      return config; // Continua mesmo com erro
+    } catch (error: any) {
+      // TIMEOUT ou erro
+      console.error('❌ [API] Timeout ou erro:', error.message);
+      // ✅ CONTINUA MESMO SEM TOKEN
+      return config;
     }
   },
   (error) => {
@@ -49,14 +60,14 @@ api.interceptors.request.use(
 
 // ========================================
 // INTERCEPTOR DE RESPONSE
-// Trata erros globalmente
 // ========================================
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       console.error('❌ [API] Token inválido ou expirado');
-      // Poderia redirecionar para login aqui se necessário
+      // Poderia forçar logout aqui
+      // window.location.href = '/login';
     }
     
     if (error.code === 'ECONNABORTED') {
@@ -67,5 +78,5 @@ api.interceptors.response.use(
   }
 );
 
-// Exporta como default também para compatibilidade
+// Exporta como default também
 export default api;
