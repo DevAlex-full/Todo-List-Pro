@@ -11,6 +11,7 @@ import {
   Circle,
   MoreVertical,
   AlertCircle,
+  Timer,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -91,20 +92,28 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
     return labels[priority as keyof typeof labels] || priority;
   };
 
-  // CORRIGIDO: Verificação de data atrasada
+  // ✅ Verificação de data atrasada
   const isOverdue = task.due_date && task.status !== 'completed' && (() => {
     const dueDate = new Date(task.due_date);
     const today = new Date();
     
-    // Zerar horas para comparar apenas datas
     dueDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     
-    // Atrasada se a data de vencimento é ANTERIOR a hoje
     return dueDate < today;
   })();
 
   const isCompleted = task.status === 'completed';
+
+  // ✅ FIX 3: Formatar tempo real
+  const formatTimeSpent = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes}min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  };
 
   return (
     <div
@@ -183,13 +192,18 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
               </span>
             )}
 
-            {/* Estimated Time */}
-            {task.estimated_time && (
+            {/* ✅ FIX 3: Mostrar TEMPO REAL se completada, ou ESTIMADO se pendente */}
+            {isCompleted && (task as any).tempo_real ? (
+              <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-green-400 bg-green-500/10 border border-green-500/20">
+                <Timer className="w-3 h-3" />
+                Tempo gasto: {formatTimeSpent((task as any).tempo_real)}
+              </span>
+            ) : task.estimated_time ? (
               <span className="flex items-center gap-1 text-purple-300">
                 <Clock className="w-3 h-3" />
-                {task.estimated_time}min
+                {task.estimated_time}min estimado
               </span>
-            )}
+            ) : null}
 
             {/* Tags */}
             {task.tags && task.tags.length > 0 && (

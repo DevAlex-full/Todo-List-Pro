@@ -142,12 +142,21 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
       return;
     }
 
+    // ✅ FIX 1: Converter data para timezone local
+    let dueDateFormatted = undefined;
+    if (dueDate) {
+      const [year, month, day] = dueDate.split('-');
+      const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+      dueDateFormatted = localDate.toISOString();
+      console.log('📅 Data selecionada:', dueDate, '→ ISO:', dueDateFormatted);
+    }
+
     const taskData: CreateTaskDTO = {
       title: title.trim(),
       description: description.trim() || undefined,
       category_id: categoryId || undefined,
       priority,
-      due_date: dueDate || undefined,
+      due_date: dueDateFormatted,
       estimated_time: estimatedTime ? parseInt(estimatedTime) : undefined,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
     };
@@ -238,11 +247,12 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
+                  style={{ colorScheme: 'dark' }}
                 >
-                  <option value="">Sem categoria</option>
+                  <option value="" className="bg-slate-800 text-white">Sem categoria</option>
                   {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id}>
+                    <option key={cat.id} value={cat.id} className="bg-slate-800 text-white">
                       {cat.icon} {cat.name}
                     </option>
                   ))}
@@ -266,12 +276,13 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
+                style={{ colorScheme: 'dark' }}
               >
-                <option value="low">🟢 Baixa</option>
-                <option value="medium">🟡 Média</option>
-                <option value="high">🟠 Alta</option>
-                <option value="urgent">🔴 Urgente</option>
+                <option value="low" className="bg-slate-800 text-white">🟢 Baixa</option>
+                <option value="medium" className="bg-slate-800 text-white">🟡 Média</option>
+                <option value="high" className="bg-slate-800 text-white">🟠 Alta</option>
+                <option value="urgent" className="bg-slate-800 text-white">🔴 Urgente</option>
               </select>
             </div>
 
@@ -287,6 +298,7 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
                 onChange={(e) => setDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                style={{ colorScheme: 'dark' }}
               />
             </div>
 
@@ -304,6 +316,9 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
                 min="1"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
               />
+              <p className="text-xs text-green-400 mt-1">
+                ⏱️ O tempo real será calculado automaticamente ao concluir
+              </p>
             </div>
           </div>
 
