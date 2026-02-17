@@ -12,20 +12,46 @@
   box-sizing: border-box;
 }
 
+/* ========================================
+   MELHORIAS MOBILE
+   ======================================== */
+
+/* Remove highlight azul em tap no mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* Previne zoom indesejado ao focar inputs no iOS */
+  -webkit-text-size-adjust: 100%;
+  /* Scroll suave */
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Previne scroll horizontal indesejado */
+  overflow-x: hidden;
+}
+
+/* Inputs com font-size mínimo 16px no mobile — previne zoom automático no iOS */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Components usando @apply */
+/* ========================================
+   COMPONENTES
+   ======================================== */
 @layer components {
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-card border border-gray-200 dark:border-gray-700;
@@ -52,7 +78,9 @@ code {
   }
 }
 
-/* Utilities customizadas */
+/* ========================================
+   UTILITIES
+   ======================================== */
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -95,59 +123,57 @@ code {
       background-color: rgb(107, 114, 128);
     }
   }
+
+  /* Touch manipulation helper */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
 }
 
-/* Animações personalizadas */
+/* ========================================
+   ANIMAÇÕES
+   ======================================== */
 @keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
 .skeleton {
   animation: shimmer 2s infinite;
-  background: linear-gradient(
-    to right,
-    #f0f0f0 4%,
-    #e8e8e8 25%,
-    #f0f0f0 36%
-  );
+  background: linear-gradient(to right, #f0f0f0 4%, #e8e8e8 25%, #f0f0f0 36%);
   background-size: 1000px 100%;
 }
 
 .dark .skeleton {
-  background: linear-gradient(
-    to right,
-    #2d2d2d 4%,
-    #3a3a3a 25%,
-    #2d2d2d 36%
-  );
+  background: linear-gradient(to right, #2d2d2d 4%, #3a3a3a 25%, #2d2d2d 36%);
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Modal mobile — slide up da parte inferior */
+@keyframes slideUpModal {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-slide-up {
+  animation: slideUpModal 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (min-width: 640px) {
+  .modal-slide-up {
+    animation: fadeIn 0.2s ease-out;
   }
 }
 
-/* Classes de animação */
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
@@ -156,19 +182,15 @@ code {
   animation: slideUp 0.3s ease-out;
 }
 
-/* Customização do Toaster */
+/* Toaster */
 .Toaster__toast {
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 @keyframes slowZoom {
-  0% {
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-  100% {
-    transform: scale(1.06) translate3d(0, 0, 0);
-  }
+  0% { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.06) translate3d(0, 0, 0); }
 }
 
 .animate-slow-zoom {
@@ -186,4 +208,10 @@ code {
 
 .bg-fade {
   transition: opacity 1s ease-in-out;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

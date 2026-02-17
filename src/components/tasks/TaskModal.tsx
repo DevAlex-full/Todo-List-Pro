@@ -1,14 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import type { Task, CreateTaskDTO, UpdateTaskDTO, Priority } from '@/types';
 import { 
-  X, 
-  Calendar, 
-  Clock, 
-  Flag, 
-  Tag, 
-  AlignLeft,
-  Folder,
-  Loader2
+  X, Calendar, Clock, Flag, Tag, AlignLeft, Folder, Loader2
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -24,7 +17,6 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!task;
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -33,14 +25,11 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
   const [estimatedTime, setEstimatedTime] = useState('');
   const [tags, setTags] = useState('');
 
-  // Buscar categorias COM DEBUG
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       try {
-        console.log('🔍 Buscando categorias...');
         const { data } = await api.get('/categories');
-        console.log('✅ Categorias recebidas:', data);
         return data.data || [];
       } catch (error) {
         console.error('❌ Erro ao buscar categorias:', error);
@@ -49,26 +38,21 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
     },
     retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 60000, // Cache de 1 minuto
+    staleTime: 60000,
   });
 
-  // Debug de categorias
   useEffect(() => {
     if (categories) {
       console.log('📦 Categorias disponíveis:', categories);
-      console.log('📊 Total de categorias:', categories.length);
     }
     if (categoriesError) {
       console.error('⚠️ Erro nas categorias:', categoriesError);
     }
   }, [categories, categoriesError]);
 
-  // Mutation para criar tarefa
   const createMutation = useMutation({
     mutationFn: async (taskData: CreateTaskDTO) => {
-      console.log('📤 Enviando tarefa:', taskData);
       const response = await api.post('/tasks', taskData);
-      console.log('✅ Tarefa criada:', response.data);
       return response.data;
     },
     onSuccess: () => {
@@ -78,18 +62,13 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
       handleClose();
     },
     onError: (error: any) => {
-      console.error('❌ Erro ao criar tarefa:', error);
-      console.error('❌ Response:', error.response?.data);
       toast.error(error.response?.data?.message || error.response?.data?.error || 'Erro ao criar tarefa');
     },
   });
 
-  // Mutation para atualizar tarefa
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateTaskDTO }) => {
-      console.log('📤 Atualizando tarefa:', id, data);
       const response = await api.patch(`/tasks/${id}`, data);
-      console.log('✅ Tarefa atualizada:', response.data);
       return response.data;
     },
     onSuccess: () => {
@@ -99,12 +78,10 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
       handleClose();
     },
     onError: (error: any) => {
-      console.error('❌ Erro ao atualizar tarefa:', error);
       toast.error(error.response?.data?.message || error.response?.data?.error || 'Erro ao atualizar tarefa');
     },
   });
 
-  // Preencher form ao editar
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -120,35 +97,21 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
   }, [task]);
 
   const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setCategoryId('');
-    setPriority('medium');
-    setDueDate('');
-    setEstimatedTime('');
-    setTags('');
+    setTitle(''); setDescription(''); setCategoryId('');
+    setPriority('medium'); setDueDate(''); setEstimatedTime(''); setTags('');
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+  const handleClose = () => { resetForm(); onClose(); };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) { toast.error('O título é obrigatório'); return; }
 
-    if (!title.trim()) {
-      toast.error('O título é obrigatório');
-      return;
-    }
-
-    // ✅ FIX 1: Converter data para timezone local
     let dueDateFormatted = undefined;
     if (dueDate) {
       const [year, month, day] = dueDate.split('-');
       const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
       dueDateFormatted = localDate.toISOString();
-      console.log('📅 Data selecionada:', dueDate, '→ ISO:', dueDateFormatted);
     }
 
     const taskData: CreateTaskDTO = {
@@ -160,8 +123,6 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
       estimated_time: estimatedTime ? parseInt(estimatedTime) : undefined,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
     };
-
-    console.log('📋 Dados da tarefa:', taskData);
 
     if (isEditing && task) {
       updateMutation.mutate({ id: task.id, data: taskData });
@@ -175,26 +136,41 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      {/*
+        Mobile: slide up da parte inferior (items-end), ocupa quase tela toda
+        Tablet+: centralizado (items-center), max-w-2xl
+      */}
+      <div className="
+        w-full bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl
+        rounded-t-2xl sm:rounded-2xl
+        max-h-[92dvh] sm:max-h-[90vh] sm:max-w-2xl
+        flex flex-col
+        overflow-hidden
+      ">
+        {/* Handle bar no mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 className="text-2xl font-bold text-white">
+        <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 shrink-0">
+          <h2 className="text-lg lg:text-2xl font-bold text-white">
             {isEditing ? 'Editar Tarefa' : 'Nova Tarefa'}
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/10 active:bg-white/20 rounded-lg transition-colors touch-manipulation"
           >
             <X className="w-5 h-5 text-purple-300" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        {/* Form — scrollável */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 lg:py-5 space-y-4 lg:space-y-5">
           {/* Título */}
           <div>
-            <label className="block text-sm font-medium text-purple-100 mb-2">
+            <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
               Título <span className="text-red-400">*</span>
             </label>
             <input
@@ -203,14 +179,15 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="O que você precisa fazer?"
               required
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              autoFocus={false}
+              className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
             />
           </div>
 
           {/* Descrição */}
           <div>
-            <label className="block text-sm font-medium text-purple-100 mb-2">
-              <AlignLeft className="w-4 h-4 inline mr-1" />
+            <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+              <AlignLeft className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
               Descrição
             </label>
             <textarea
@@ -218,78 +195,72 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Adicione mais detalhes..."
               rows={3}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+              className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none text-sm lg:text-base"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Grid: 1 col mobile, 2 cols md+ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
             {/* Categoria */}
             <div>
-              <label className="block text-sm font-medium text-purple-100 mb-2">
-                <Folder className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+                <Folder className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
                 Categoria
               </label>
-              
               {categoriesLoading ? (
-                <div className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-purple-300 flex items-center gap-2">
+                <div className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-purple-300 flex items-center gap-2 text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Carregando categorias...
+                  Carregando...
                 </div>
               ) : categoriesError ? (
-                <div className="w-full px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-                  ⚠️ Erro ao carregar categorias. Verifique se o backend está rodando.
+                <div className="w-full px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                  ⚠️ Erro ao carregar categorias.
                 </div>
               ) : !categories || categories.length === 0 ? (
-                <div className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-yellow-400 text-sm">
-                  ⚠️ Nenhuma categoria encontrada. Execute o SQL no Supabase!
+                <div className="w-full px-3 py-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-yellow-400 text-xs">
+                  ⚠️ Nenhuma categoria encontrada.
                 </div>
               ) : (
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
+                  className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
                   style={{ colorScheme: 'dark' }}
                 >
-                  <option value="" className="bg-slate-800 text-white">Sem categoria</option>
+                  <option value="">Sem categoria</option>
                   {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id} className="bg-slate-800 text-white">
-                      {cat.icon} {cat.name}
-                    </option>
+                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
                   ))}
                 </select>
               )}
-              
-              {/* Debug info */}
               {categories && categories.length > 0 && (
-                <p className="text-xs text-green-400 mt-1">
-                  ✅ {categories.length} categoria{categories.length !== 1 ? 's' : ''} disponível{categories.length !== 1 ? 'eis' : ''}
-                </p>
+                <p className="text-xs text-green-400 mt-1">✅ {categories.length} categorias</p>
               )}
             </div>
 
             {/* Prioridade */}
             <div>
-              <label className="block text-sm font-medium text-purple-100 mb-2">
-                <Flag className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+                <Flag className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
                 Prioridade
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
+                className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
                 style={{ colorScheme: 'dark' }}
               >
-                <option value="low" className="bg-slate-800 text-white">🟢 Baixa</option>
-                <option value="medium" className="bg-slate-800 text-white">🟡 Média</option>
-                <option value="high" className="bg-slate-800 text-white">🟠 Alta</option>
-                <option value="urgent" className="bg-slate-800 text-white">🔴 Urgente</option>
+                <option value="low">🟢 Baixa</option>
+                <option value="medium">🟡 Média</option>
+                <option value="high">🟠 Alta</option>
+                <option value="urgent">🔴 Urgente</option>
               </select>
             </div>
 
             {/* Data de Vencimento */}
             <div>
-              <label className="block text-sm font-medium text-purple-100 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+                <Calendar className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
                 Data de Vencimento
               </label>
               <input
@@ -297,15 +268,15 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
                 style={{ colorScheme: 'dark' }}
               />
             </div>
 
             {/* Tempo Estimado */}
             <div>
-              <label className="block text-sm font-medium text-purple-100 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+                <Clock className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
                 Tempo Estimado (min)
               </label>
               <input
@@ -314,35 +285,31 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
                 onChange={(e) => setEstimatedTime(e.target.value)}
                 placeholder="Ex: 30"
                 min="1"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                inputMode="numeric"
+                className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
               />
-              <p className="text-xs text-green-400 mt-1">
-                ⏱️ O tempo real será calculado automaticamente ao concluir
-              </p>
+              <p className="text-xs text-green-400 mt-1">⏱️ Tempo real calculado ao concluir</p>
             </div>
           </div>
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-purple-100 mb-2">
-              <Tag className="w-4 h-4 inline mr-1" />
+            <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
+              <Tag className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
               Tags
             </label>
             <input
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="Separe por vírgula: trabalho, urgente, importante"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              placeholder="trabalho, urgente, importante"
+              className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
             />
             {tags && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {tags.split(',').map((tag, index) => (
                   tag.trim() && (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded-lg"
-                    >
+                    <span key={index} className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded-lg">
                       {tag.trim()}
                     </span>
                   )
@@ -351,28 +318,28 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
             )}
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-white/10">
+          {/* Botões — sticky no fundo no mobile */}
+          <div className="flex gap-2 lg:gap-3 pt-3 lg:pt-4 border-t border-white/10 pb-1">
             <button
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-white/5 border border-white/10 text-purple-200 font-medium rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
+              className="flex-1 px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 text-purple-200 font-medium rounded-xl hover:bg-white/10 active:bg-white/15 transition-all disabled:opacity-50 text-sm lg:text-base touch-manipulation"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-violet-700 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/30"
+              className="flex-1 px-3 lg:px-4 py-2.5 lg:py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-violet-700 active:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/30 text-sm lg:text-base touch-manipulation"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   {isEditing ? 'Salvando...' : 'Criando...'}
                 </span>
               ) : (
-                isEditing ? 'Salvar Alterações' : 'Criar Tarefa'
+                isEditing ? 'Salvar' : 'Criar Tarefa'
               )}
             </button>
           </div>
