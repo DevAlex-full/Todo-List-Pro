@@ -3,12 +3,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore'; // ✅ NOVO
 import Sidebar from '@/components/layout/Sidebar';
 import { User, Bell, Palette, Trash2, Save, Loader2, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const { profile, setProfile } = useAuthStore();
+  const { setCustomColor: setUIColor } = useUIStore(); // ✅ NOVO
   const queryClient = useQueryClient();
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -26,10 +28,19 @@ export default function SettingsPage() {
   }, [profile]);
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => { await api.patch('/profile', data); return data; },
+    mutationFn: async (data: any) => { 
+      await api.patch('/profile', data); 
+      return data; 
+    },
     onSuccess: async (variables) => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       if (profile) setProfile({ ...profile, ...variables });
+      
+      // ✅ NOVO: Aplicar cor customizada no uiStore
+      if (variables.custom_color) {
+        setUIColor(variables.custom_color);
+      }
+      
       toast.success('✅ Perfil atualizado com sucesso!');
     },
     onError: (error: any) => toast.error(error.response?.data?.error || 'Erro ao atualizar perfil'),
@@ -50,7 +61,11 @@ export default function SettingsPage() {
   });
 
   const handleSaveProfile = () => {
-    updateProfileMutation.mutate({ full_name: fullName, notifications_enabled: notificationsEnabled, custom_color: customColor });
+    updateProfileMutation.mutate({ 
+      full_name: fullName, 
+      notifications_enabled: notificationsEnabled, 
+      custom_color: customColor 
+    });
   };
 
   const handleUpdateEmail = () => {
@@ -122,7 +137,6 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">Email</label>
-                {/* Stack vertical no mobile */}
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-purple-300" />
@@ -151,19 +165,21 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Aparência */}
+          {/* ✅ Aparência - Aviso adicionado */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-6">
             <div className="flex items-center gap-3 mb-4 lg:mb-6">
               <div className="w-9 h-9 lg:w-10 lg:h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
                 <Palette className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
               </div>
-              <h2 className="text-lg lg:text-xl font-bold text-white">Aparência</h2>
+              <div className="flex-1">
+                <h2 className="text-lg lg:text-xl font-bold text-white">Aparência</h2>
+                <p className="text-xs text-purple-300 mt-0.5">💡 A cor será aplicada no fundo das páginas</p>
+              </div>
             </div>
             <div>
               <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-2 lg:mb-3">
                 Cor do Tema ({colors.length} opções)
               </label>
-              {/* 4 colunas mobile → 6 tablet → 8 desktop */}
               <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 lg:gap-3">
                 {colors.map((color) => (
                   <button

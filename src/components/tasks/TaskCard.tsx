@@ -13,7 +13,7 @@ import {
   AlertCircle,
   Timer,
 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, isTaskOverdue, formatTimeFromMinutes } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -75,22 +75,9 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
     return labels[priority as keyof typeof labels] || priority;
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && (() => {
-    const dueDate = new Date(task.due_date);
-    const today = new Date();
-    dueDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    return dueDate < today;
-  })();
-
+  // ✅ NOVA LÓGICA: usar isTaskOverdue() do utils
+  const isOverdue = isTaskOverdue(task);
   const isCompleted = task.status === 'completed';
-
-  const formatTimeSpent = (minutes: number) => {
-    if (minutes < 60) return `${minutes}min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
-  };
 
   return (
     <div
@@ -128,7 +115,7 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
             </p>
           )}
 
-          {/* Meta Info — wrap naturalmente no mobile */}
+          {/* Meta Info */}
           <div className="flex flex-wrap items-center gap-1.5 lg:gap-2 text-xs">
             {task.category && (
               <span
@@ -144,7 +131,8 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
               {getPriorityLabel(task.priority)}
             </span>
 
-            {task.due_date && (
+            {/* ✅ ALTERADO: start_date ao invés de due_date */}
+            {task.start_date && (
               <span className={`flex items-center gap-1 px-1.5 lg:px-2 py-0.5 lg:py-1 rounded-lg ${
                 isOverdue
                   ? 'text-red-400 bg-red-500/10 border border-red-500/30'
@@ -152,20 +140,21 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
               }`}>
                 {isOverdue && <AlertCircle className="w-3 h-3" />}
                 <Calendar className="w-3 h-3" />
-                {formatDate(task.due_date)}
+                {formatDate(task.start_date)}
                 {isOverdue && <span className="font-bold ml-0.5 hidden sm:inline">ATRASADA</span>}
               </span>
             )}
 
-            {isCompleted && (task as any).tempo_real ? (
+            {/* ✅ NOVO: Mostrar tempo_real se completo, senão estimated_time */}
+            {isCompleted && task.tempo_real ? (
               <span className="flex items-center gap-1 px-1.5 lg:px-2 py-0.5 lg:py-1 rounded-lg text-green-400 bg-green-500/10 border border-green-500/20">
                 <Timer className="w-3 h-3" />
-                {formatTimeSpent((task as any).tempo_real)}
+                {formatTimeFromMinutes(task.tempo_real)}
               </span>
             ) : task.estimated_time ? (
               <span className="flex items-center gap-1 text-purple-300">
                 <Clock className="w-3 h-3" />
-                {task.estimated_time}min
+                {formatTimeFromMinutes(task.estimated_time)}
               </span>
             ) : null}
 
@@ -183,15 +172,11 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           </div>
         </div>
 
-        {/* ✅ FIX MOBILE: menu sempre visível no mobile, hover no desktop */}
+        {/* Menu */}
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className={`
-              p-1.5 rounded-lg hover:bg-white/10 transition-colors touch-manipulation
-              lg:opacity-0 lg:group-hover:opacity-100
-              opacity-100
-            `}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors touch-manipulation lg:opacity-0 lg:group-hover:opacity-100 opacity-100"
           >
             <MoreVertical className="w-4 h-4 lg:w-5 lg:h-5 text-purple-300" />
           </button>

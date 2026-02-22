@@ -13,14 +13,12 @@ import { useUIStore } from '@/store/uiStore';
 
 export default function Sidebar() {
   const location = useLocation();
-  const { user, signOut } = useAuthStore();
-  const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { user, profile, signOut } = useAuthStore();
+  const { sidebarOpen, toggleSidebar, customColor } = useUIStore();
 
   const handleLogout = async () => {
     if (confirm('Tem certeza que deseja sair?')) {
       console.log('🚪 Logout iniciado pelo usuário');
-
-      // Fazer logout (o authStore já cuida de limpar tudo)
       await signOut();
     }
   };
@@ -48,6 +46,10 @@ export default function Sidebar() {
     },
   ];
 
+  // ✅ Pegar nome completo ou primeira letra do email
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Usuário';
+  const avatarInitial = profile?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
+
   return (
     <>
       {/* Mobile Menu Button */}
@@ -68,8 +70,9 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 border-r border-slate-700 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          }`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 border-r border-slate-700 flex flex-col transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-slate-700">
@@ -103,10 +106,11 @@ export default function Sidebar() {
                     toggleSidebar();
                   }
                 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                  ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
-                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                  }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                    : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                }`}
               >
                 <Icon className="h-5 w-5" />
                 <span className="font-medium">{item.label}</span>
@@ -118,15 +122,23 @@ export default function Sidebar() {
         {/* User Profile */}
         <div className="p-4 border-t border-slate-700">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
+            {/* ✅ Avatar com cor customizada */}
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ 
+                background: `linear-gradient(135deg, ${customColor}, ${customColor}dd)` 
+              }}
+            >
               <span className="text-white font-bold text-sm">
-                {user?.email?.[0].toUpperCase() || 'U'}
+                {avatarInitial}
               </span>
             </div>
             <div className="flex-1 min-w-0">
+              {/* ✅ Mostrar full_name se existir */}
               <p className="text-white font-medium text-sm truncate">
-                {user?.email?.split('@')[0] || 'Usuário'}
+                {displayName}
               </p>
+              {/* ✅ Email completo abaixo */}
               <p className="text-slate-400 text-xs truncate">{user?.email}</p>
             </div>
           </div>

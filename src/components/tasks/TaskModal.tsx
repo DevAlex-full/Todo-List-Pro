@@ -6,6 +6,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { parseTimeToMinutes, formatTimeFromMinutes } from '@/lib/utils';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -21,8 +22,8 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [estimatedTimeInput, setEstimatedTimeInput] = useState('');
   const [tags, setTags] = useState('');
 
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery({
@@ -88,8 +89,14 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
       setDescription(task.description || '');
       setCategoryId(task.category_id || '');
       setPriority(task.priority);
-      setDueDate(task.due_date ? task.due_date.split('T')[0] : '');
-      setEstimatedTime(task.estimated_time?.toString() || '');
+      setStartDate(task.start_date ? task.start_date.split('T')[0] : '');
+      
+      if (task.estimated_time) {
+        setEstimatedTimeInput(formatTimeFromMinutes(task.estimated_time));
+      } else {
+        setEstimatedTimeInput('');
+      }
+      
       setTags(task.tags?.join(', ') || '');
     } else {
       resetForm();
@@ -98,7 +105,7 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
 
   const resetForm = () => {
     setTitle(''); setDescription(''); setCategoryId('');
-    setPriority('medium'); setDueDate(''); setEstimatedTime(''); setTags('');
+    setPriority('medium'); setStartDate(''); setEstimatedTimeInput(''); setTags('');
   };
 
   const handleClose = () => { resetForm(); onClose(); };
@@ -107,20 +114,40 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
     e.preventDefault();
     if (!title.trim()) { toast.error('O título é obrigatório'); return; }
 
-    let dueDateFormatted = undefined;
-    if (dueDate) {
-      const [year, month, day] = dueDate.split('-');
-      const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
-      dueDateFormatted = localDate.toISOString();
+    // ✅ CORRIGIDO: Usar HORA ATUAL ao escolher data
+    let startDateFormatted = undefined;
+    if (startDate) {
+      const [year, month, day] = startDate.split('-');
+      const now = new Date(); // Pegar hora atual
+      const localDate = new Date(
+        parseInt(year), 
+        parseInt(month) - 1, 
+        parseInt(day), 
+        now.getHours(),    // ✅ HORA ATUAL
+        now.getMinutes(),  // ✅ MINUTO ATUAL
+        now.getSeconds()   // ✅ SEGUNDO ATUAL
+      );
+      startDateFormatted = localDate.toISOString();
+      
+      console.log('📅 Data de início formatada:', {
+        input: startDate,
+        horaAtual: now.toLocaleString('pt-BR'),
+        resultado: localDate.toLocaleString('pt-BR')
+      });
     }
+
+    // Converter tempo para minutos
+    const estimatedTimeMinutes = estimatedTimeInput.trim() 
+      ? parseTimeToMinutes(estimatedTimeInput)
+      : undefined;
 
     const taskData: CreateTaskDTO = {
       title: title.trim(),
       description: description.trim() || undefined,
       category_id: categoryId || undefined,
       priority,
-      due_date: dueDateFormatted,
-      estimated_time: estimatedTime ? parseInt(estimatedTime) : undefined,
+      start_date: startDateFormatted,
+      estimated_time: estimatedTimeMinutes,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
     };
 
@@ -137,10 +164,6 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
-      {/*
-        Mobile: slide up da parte inferior (items-end), ocupa quase tela toda
-        Tablet+: centralizado (items-center), max-w-2xl
-      */}
       <div className="
         w-full bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl
         rounded-t-2xl sm:rounded-2xl
@@ -257,38 +280,41 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
               </select>
             </div>
 
-            {/* Data de Vencimento */}
+            {/* Data de Início */}
             <div>
               <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
                 <Calendar className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
-                Data de Vencimento
+                Data de Início (opcional)
               </label>
               <input
                 type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
                 className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
                 style={{ colorScheme: 'dark' }}
               />
+              <p className="text-xs text-purple-300 mt-1">
+                💡 Deixe vazio para iniciar agora
+              </p>
             </div>
 
             {/* Tempo Estimado */}
             <div>
               <label className="block text-xs lg:text-sm font-medium text-purple-100 mb-1.5 lg:mb-2">
                 <Clock className="w-3 h-3 lg:w-4 lg:h-4 inline mr-1" />
-                Tempo Estimado (min)
+                Tempo Estimado
               </label>
               <input
-                type="number"
-                value={estimatedTime}
-                onChange={(e) => setEstimatedTime(e.target.value)}
-                placeholder="Ex: 30"
-                min="1"
-                inputMode="numeric"
+                type="text"
+                value={estimatedTimeInput}
+                onChange={(e) => setEstimatedTimeInput(e.target.value)}
+                placeholder="Ex: 2h, 30min, 3d"
                 className="w-full px-3 lg:px-4 py-2.5 lg:py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm lg:text-base"
               />
-              <p className="text-xs text-green-400 mt-1">⏱️ Tempo real calculado ao concluir</p>
+              <p className="text-xs text-purple-300 mt-1">
+                💡 Use: 30min, 2h, 3d
+                {estimatedTimeInput && ` → ${formatTimeFromMinutes(parseTimeToMinutes(estimatedTimeInput))}`}
+              </p>
             </div>
           </div>
 
@@ -318,7 +344,7 @@ export default function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
             )}
           </div>
 
-          {/* Botões — sticky no fundo no mobile */}
+          {/* Botões */}
           <div className="flex gap-2 lg:gap-3 pt-3 lg:pt-4 border-t border-white/10 pb-1">
             <button
               type="button"

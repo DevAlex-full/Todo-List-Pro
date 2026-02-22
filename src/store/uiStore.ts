@@ -19,13 +19,14 @@ interface UIState {
   setCategoryModalOpen: (open: boolean) => void;
   setPomodoroDrawerOpen: (open: boolean) => void;
   applyTheme: () => void;
+  applyCustomColor: (color: string) => void; // ✅ NOVO
 }
 
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
       theme: 'light',
-      customColor: '#3B82F6',
+      customColor: '#8B5CF6', // roxo padrão
       sidebarOpen: true,
       taskModalOpen: false,
       categoryModalOpen: false,
@@ -36,9 +37,23 @@ export const useUIStore = create<UIState>()(
         get().applyTheme();
       },
 
+      // ✅ NOVO: Aplica cor customizada imediatamente
+      applyCustomColor: (color: string) => {
+        console.log('🎨 Aplicando cor customizada:', color);
+        
+        // Aplicar no root
+        document.documentElement.style.setProperty('--color-primary', color);
+        document.documentElement.style.setProperty('--color-custom', color);
+        
+        // Forçar repaint
+        document.body.style.display = 'none';
+        document.body.offsetHeight; // trigger reflow
+        document.body.style.display = '';
+      },
+
       setCustomColor: (customColor) => {
         set({ customColor });
-        document.documentElement.style.setProperty('--color-primary', customColor);
+        get().applyCustomColor(customColor);
       },
 
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -75,9 +90,14 @@ export const useUIStore = create<UIState>()(
       onRehydrateStorage: () => (state) => {
         // Aplicar tema após carregar do storage
         state?.applyTheme();
-        // Aplicar cor customizada
+        
+        // ✅ CORRIGIDO: Aplicar cor customizada COM DELAY
         if (state?.customColor) {
-          document.documentElement.style.setProperty('--color-primary', state.customColor);
+          // Delay pequeno para garantir que o DOM está pronto
+          setTimeout(() => {
+            console.log('🎨 Inicializando cor customizada:', state.customColor);
+            state.applyCustomColor(state.customColor);
+          }, 100);
         }
       },
     }

@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, formatDistanceToNow, isToday, isTomorrow, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import type { Task } from '@/types';
 
 /**
  * Merge classes do Tailwind CSS
@@ -40,7 +41,51 @@ export function formatRelativeDate(date: string | Date | null): string {
 }
 
 /**
- * Verificar se a data está atrasada
+ * ✅ CORRIGIDO COM DEBUG: Verificar se a tarefa está atrasada
+ */
+export function isTaskOverdue(task: Task): boolean {
+  // Se está completa, nunca está atrasada
+  if (task.status === 'completed') {
+    return false;
+  }
+  
+  // Se não tem tempo estimado, não pode estar atrasada
+  if (!task.estimated_time) {
+    return false;
+  }
+  
+  const now = new Date();
+  let referenceDate: Date;
+  
+  // Usar start_date se existir, senão usar created_at
+  if (task.start_date) {
+    referenceDate = new Date(task.start_date);
+  } else {
+    referenceDate = new Date(task.created_at);
+  }
+  
+  const estimatedMinutes = task.estimated_time;
+  const expectedEndDate = new Date(referenceDate.getTime() + estimatedMinutes * 60000);
+  
+  // ✅ DEBUG - remover depois de testar
+  const isOverdue = expectedEndDate < now;
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 isTaskOverdue:', {
+      title: task.title,
+      referenceDate: referenceDate.toLocaleString('pt-BR'),
+      estimatedMinutes,
+      expectedEndDate: expectedEndDate.toLocaleString('pt-BR'),
+      now: now.toLocaleString('pt-BR'),
+      isOverdue,
+    });
+  }
+  
+  return isOverdue;
+}
+
+/**
+ * ✅ DEPRECATED: Manter por compatibilidade, mas usar isTaskOverdue()
  */
 export function isOverdue(dueDate: string | Date | null): boolean {
   if (!dueDate) return false;
@@ -124,17 +169,74 @@ export const statusLabels = {
 };
 
 /**
- * Formatar tempo em minutos para horas e minutos
+ * ✅ NOVO: Converter string de tempo para minutos
+ * Exemplos: "2h" → 120, "30min" → 30, "3d" → 4320
+ */
+export function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr || timeStr.trim() === '') return 0;
+  
+  const str = timeStr.toLowerCase().trim();
+  
+  // Remover espaços e capturar número + unidade
+  const match = str.match(/^(\d+\.?\d*)\s*(min|m|h|d|dia|dias)?$/);
+  
+  if (!match) return 0;
+  
+  const value = parseFloat(match[1]);
+  const unit = match[2] || 'min'; // padrão: minutos
+  
+  switch (unit) {
+    case 'min':
+    case 'm':
+      return Math.round(value);
+    case 'h':
+      return Math.round(value * 60);
+    case 'd':
+    case 'dia':
+    case 'dias':
+      return Math.round(value * 24 * 60);
+    default:
+      return Math.round(value); // assume minutos
+  }
+}
+
+/**
+ * ✅ NOVO: Converter minutos para string amigável
+ * Exemplos: 120 → "2h", 30 → "30min", 4320 → "3d"
+ */
+export function formatTimeFromMinutes(minutes: number | null): string {
+  if (!minutes || minutes === 0) return '0min';
+  
+  // Dias
+  if (minutes >= 1440) {
+    const days = Math.floor(minutes / 1440);
+    const remainingHours = Math.floor((minutes % 1440) / 60);
+    if (remainingHours > 0) {
+      return `${days}d ${remainingHours}h`;
+    }
+    return `${days}d`;
+  }
+  
+  // Horas
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins > 0) {
+      return `${hours}h ${mins}min`;
+    }
+    return `${hours}h`;
+  }
+  
+  // Minutos
+  return `${minutes}min`;
+}
+
+/**
+ * ✅ DEPRECATED: Usar formatTimeFromMinutes()
+ * Mantido por compatibilidade
  */
 export function formatTime(minutes: number | null): string {
-  if (!minutes) return '0min';
-  
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  
-  if (hours === 0) return `${mins}min`;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h ${mins}min`;
+  return formatTimeFromMinutes(minutes);
 }
 
 /**
